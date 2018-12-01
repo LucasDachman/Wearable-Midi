@@ -1,25 +1,20 @@
 /**
- * HC-SR04 Demo
- * Demonstration of the HC-SR04 Ultrasonic Sensor
- * Date: August 3, 2016
- * 
- * Description:
- *  Connect the ultrasonic sensor to the Arduino as per the
- *  hardware connections below. Run the sketch and open a serial
- *  monitor. The distance read from the sensor will be displayed
- *  in centimeters and inches.
+ * Lucas Dachman
+ * Date: November 30, 2018
  * 
  * Hardware Connections:
  *  Arduino | HC-SR04 
  *  -------------------
  *    5V    |   VCC     
- *    7     |   Trig     
- *    8     |   Echo     
+ *    16    |   Trig     
+ *    15    |   Echo     
  *    GND   |   GND
  *  
  * License:
  *  Public Domain
  */
+#include "MIDIUSB.h"
+
 
 // Pins
 const int TRIG_PIN_1 = 16;
@@ -36,12 +31,22 @@ void setup() {
 
   // We'll use the serial monitor to view the sensor output
   Serial.begin(9600);
+  while (!Serial);
 }
 
 void loop() {
   float cm = getDistance(TRIG_PIN_1, ECHO_PIN_1);
-  Serial.print(cm); Serial.println("cm");
-  
+  //Serial.print(cm); Serial.println("cm");
+  // if in range
+  if (cm >= 0) {
+    if (cm > 40.0) {
+      cm = 40.0;
+    }
+    int control = mapFloat(cm, 0.0, 40.0, 0.0, 127.0);
+    Serial.println(control);
+    controlChange(1, 16, control);
+    MidiUSB.flush();
+  }
 }
 
 float getDistance(int TRIG_PIN, int ECHO_PIN) {
@@ -82,4 +87,36 @@ float getDistance(int TRIG_PIN, int ECHO_PIN) {
     //Serial.print(cm);
     //Serial.println(" cm \t");
   }
+}
+
+  
+// First parameter is the event type (0x09 = note on, 0x08 = note off).
+// Second parameter is note-on/note-off, combined with the channel.
+// Channel can be anything between 0-15. Typically reported to the user as 1-16.
+// Third parameter is the note number (48 = middle C).
+// Fourth parameter is the velocity (64 = normal, 127 = fastest).
+
+void noteOn(byte channel, byte pitch, byte velocity) {
+  midiEventPacket_t noteOn = {0x09, 0x90 | channel, pitch, velocity};
+  MidiUSB.sendMIDI(noteOn);
+}
+
+void noteOff(byte channel, byte pitch, byte velocity) {
+  midiEventPacket_t noteOff = {0x08, 0x80 | channel, pitch, velocity};
+  MidiUSB.sendMIDI(noteOff);
+}
+
+// First parameter is the event type (0x0B = control change).
+// Second parameter is the event type, combined with the channel.
+// Third parameter is the control number number (0-119).
+// Fourth parameter is the control value (0-127).
+
+void controlChange(byte channel, byte control, byte value) {
+  midiEventPacket_t event = {0x0B, 0xB0 | channel, control, value};
+  MidiUSB.sendMIDI(event);
+}
+
+int mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
