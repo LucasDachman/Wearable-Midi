@@ -3,12 +3,14 @@
  * Date: November 30, 2018
  * 
  * Hardware Connections:
- *  Arduino | HC-SR04 
- *  -------------------
- *    5V    |   VCC     
- *    16    |   Trig     
- *    15    |   Echo     
- *    GND   |   GND
+ * Pro Micro | HC-SR04 
+ * ---------------------
+ *     5V    |   VCC     
+ *     14    |   Trig1     
+ *     15    |   Echo1     
+ *     10    |   Trig2     
+ *     16    |   Echo2
+ *     GND   |   GND
  *  
  * License:
  *  Public Domain
@@ -17,7 +19,9 @@
 
 
 // Pins
-const int TRIG_PIN_1 = 16;
+const int TRIG_PIN_2 = 10;
+const int ECHO_PIN_2 = 16;
+const int TRIG_PIN_1 = 14;
 const int ECHO_PIN_1 = 15;
 
 // Anything over 400 cm (23200 us pulse) is "out of range"
@@ -28,6 +32,8 @@ void setup() {
   // The Trigger pin will tell the sensor to range find
   pinMode(TRIG_PIN_1, OUTPUT);
   digitalWrite(TRIG_PIN_1, LOW);
+  pinMode(TRIG_PIN_2, OUTPUT);
+  digitalWrite(TRIG_PIN_2, LOW);
 
   // We'll use the serial monitor to view the sensor output
   Serial.begin(9600);
@@ -35,16 +41,21 @@ void setup() {
 }
 
 void loop() {
-  float cm = getDistance(TRIG_PIN_1, ECHO_PIN_1);
-  //Serial.print(cm); Serial.println("cm");
-  // if in range
+  float cm;
+  cm = getDistance(TRIG_PIN_1, ECHO_PIN_1);
+  sendMidi(16, cm);
+  cm = getDistance(TRIG_PIN_2, ECHO_PIN_2);
+  sendMidi(17, cm);
+}
+
+void sendMidi(byte control, float cm) {
   if (cm >= 0) {
     if (cm > 40.0) {
       cm = 40.0;
     }
-    int control = mapFloat(cm, 0.0, 40.0, 0.0, 127.0);
-    Serial.println(control);
-    controlChange(1, 16, control);
+    int value = mapFloat(cm, 0.0, 40.0, 0.0, 127.0);
+    Serial.print(control); Serial.print(" "); Serial.println(value);
+    controlChange(1, control, value);
     MidiUSB.flush();
   }
 }
