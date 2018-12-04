@@ -26,11 +26,13 @@ const int ECHO_PIN_1 = 15;
 
 // Anything over 400 cm (23200 us pulse) is "out of range"
 const unsigned int MAX_DIST = 23200;
-const int BUF_SIZE = 10;
+const int BUF_SIZE = 5;
 int buf1 [BUF_SIZE];
 int buf2[BUF_SIZE];
 int index1 = 0;
 int index2 = 0;
+int lastMidiVal1 = 0;
+int lastMidiVal2 = 0;
 
 void setup() {
 
@@ -53,27 +55,36 @@ void setup() {
 void loop() {
   float cm;
   int value;
-  
+
   // first distance
   cm = getDistance(TRIG_PIN_1, ECHO_PIN_1);
   if (cm >=0) {
     value = smoothValue(cm, buf1, &index1);
-    Serial.print("1: "); Serial.print(value);
-    controlChange(1, 16, value);
-    MidiUSB.flush();
+    if (lastMidiVal1 != value) {
+      lastMidiVal1 = value;
+      Serial.print("1: "); Serial.print(value);
+  // unsigned long t1 = micros();
+      controlChange(1, 16, value);
+    //Serial.println(micros() - t1);
+      MidiUSB.flush();
+    }
   }
-
+ 
+  Serial.print("\t");
   // second distance
   cm = getDistance(TRIG_PIN_2, ECHO_PIN_2);
   if (cm >=0) {
     value = smoothValue(cm, buf2, &index2);
-    Serial.print("\t"); Serial.print("2: "); Serial.println(value);
-    controlChange(1, 17, value);
-    MidiUSB.flush();
+    if (lastMidiVal2 != value) {
+      // Serial.print("2: "); Serial.println(value);
+      lastMidiVal2 = value;
+      controlChange(1, 17, value);
+      MidiUSB.flush();
+    }
   } else {
-    Serial.println();
   }
-
+    Serial.println();
+ 
     // Wait at least 60ms before next measurement
     delay(60);
 }
@@ -96,12 +107,16 @@ int smoothValue(float cm, int buffer[BUF_SIZE], int *index)
     *index = 0;
   }
   // sum and average values
+  // Serial.print("[");
   int average = 0;
   for (int i = 0; i < BUF_SIZE; i++)
   {
+    // Serial.print(buffer[i]); Serial.print(" ");
     average += buffer[i];
   }
+  // Serial.print("] average: ");
   average = average / BUF_SIZE;
+  //Serial.println(average);
   return average;
 }
 
