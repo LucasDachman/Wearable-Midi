@@ -27,8 +27,8 @@ const int ECHO_PIN_1 = 15;
 // Anything over 400 cm (23200 us pulse) is "out of range"
 const unsigned int MAX_DIST = 23200;
 const int BUF_SIZE = 10;
-int [BUFF_SIZE] buf1;
-int [BUFF_SIZE] buf2;
+int buf1 [BUF_SIZE];
+int buf2[BUF_SIZE];
 int index1 = 0;
 int index2 = 0;
 
@@ -40,30 +40,35 @@ void setup() {
   pinMode(TRIG_PIN_2, OUTPUT);
   digitalWrite(TRIG_PIN_2, LOW);
 
-  // We'll use the serial monitor to view the sensor output
+  // init buffers
+  for (int i = 0; i < BUF_SIZE; i++) {
+    buf1[i] = 0;
+    buf2[i] = 0;
+  }
+
   Serial.begin(9600);
   //while (!Serial);
 }
 
 void loop() {
   float cm;
+  int value;
+
   // first distance
   cm = getDistance(TRIG_PIN_1, ECHO_PIN_1);
-  int value1 = smoothValue(cm, buf1, &index1);
-  sendMidi(16, value1);
+  if (cm >=0) {
+    value = smoothValue(cm, buf1, &index1);
+    controlChange(1, 16, value);
+    MidiUSB.flush();
+  }
 
   // second distance
   cm = getDistance(TRIG_PIN_2, ECHO_PIN_2);
-  int value2 = smoothValue(cm, buf2, &index2);
-  sendMidi(17, value2);
-}
-
-void sendMidi(byte control, int value) {
-  if (value < 0) {
-    return;
+  if (cm >=0) {
+    value = smoothValue(cm, buf2, &index2);
+    controlChange(1, 17, value);
+    MidiUSB.flush();
   }
-  controlChange(1, control, value);
-  MidiUSB.flush();
 }
 
 int smoothValue(float cm, int buffer[BUF_SIZE], int *index)
