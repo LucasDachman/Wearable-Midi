@@ -53,11 +53,12 @@ void setup() {
 void loop() {
   float cm;
   int value;
-
+  
   // first distance
   cm = getDistance(TRIG_PIN_1, ECHO_PIN_1);
   if (cm >=0) {
     value = smoothValue(cm, buf1, &index1);
+    Serial.print("1: "); Serial.print(value);
     controlChange(1, 16, value);
     MidiUSB.flush();
   }
@@ -66,9 +67,15 @@ void loop() {
   cm = getDistance(TRIG_PIN_2, ECHO_PIN_2);
   if (cm >=0) {
     value = smoothValue(cm, buf2, &index2);
+    Serial.print("\t"); Serial.print("2: "); Serial.println(value);
     controlChange(1, 17, value);
     MidiUSB.flush();
+  } else {
+    Serial.println();
   }
+
+    // Wait at least 60ms before next measurement
+    delay(60);
 }
 
 int smoothValue(float cm, int buffer[BUF_SIZE], int *index)
@@ -83,7 +90,6 @@ int smoothValue(float cm, int buffer[BUF_SIZE], int *index)
   }
   int value = mapFloat(cm, 0.0, 40.0, 0.0, 127.0);
   buffer[*index] = value;
-  //Serial.print(control); Serial.print(" "); Serial.println(value); buffer[*index] = val;
   (*index)++;
   if (*index >= BUF_SIZE)
   {
@@ -105,9 +111,6 @@ int smoothValue(float cm, int buffer[BUF_SIZE], int *index)
     unsigned long t2;
     unsigned long pulse_width;
     float cm;
-
-    // Wait at least 60ms before next measurement
-    delay(60);
 
     // Hold the trigger pin high for at least 10 us
     digitalWrite(TRIG_PIN, HIGH);
