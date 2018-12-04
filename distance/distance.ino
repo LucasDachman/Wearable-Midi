@@ -37,7 +37,7 @@ void setup() {
 
   // We'll use the serial monitor to view the sensor output
   Serial.begin(9600);
-  while (!Serial);
+  //while (!Serial);
 }
 
 void loop() {
