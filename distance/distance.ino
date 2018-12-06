@@ -62,7 +62,7 @@ void loop() {
     value = smoothValue(cm, buf1, &index1);
     if (lastMidiVal1 != value) {
       lastMidiVal1 = value;
-      Serial.print("1: "); Serial.print(value);
+      // Serial.print("1: "); Serial.print(value);
   // unsigned long t1 = micros();
       controlChange(1, 16, value);
     //Serial.println(micros() - t1);
@@ -76,12 +76,11 @@ void loop() {
   if (cm >=0) {
     value = smoothValue(cm, buf2, &index2);
     if (lastMidiVal2 != value) {
-      // Serial.print("2: "); Serial.println(value);
       lastMidiVal2 = value;
+      Serial.print("2: "); Serial.println(value);
       controlChange(1, 17, value);
       MidiUSB.flush();
     }
-  } else {
   }
     Serial.println();
  
