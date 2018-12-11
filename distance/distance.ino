@@ -50,42 +50,44 @@ void setup() {
 
   Serial.begin(9600);
   //while (!Serial);
+  Serial.println("AAAAHHHHH");
 }
 
-void loop() {
+void loop()
+{
   float cm;
-  int value;
+  int value1;
+  int value2;
 
   // first distance
   cm = getDistance(TRIG_PIN_1, ECHO_PIN_1);
-  if (cm >=0) {
-    value = smoothValue(cm, buf1, &index1);
-    if (lastMidiVal1 != value) {
-      lastMidiVal1 = value;
-      // Serial.print("1: "); Serial.print(value);
-  // unsigned long t1 = micros();
-      controlChange(1, 16, value);
-    //Serial.println(micros() - t1);
+  if (cm >= 0)
+  {
+    value1 = smoothValue(cm, buf1, &index1);
+    if (lastMidiVal1 != value1)
+    {
+      lastMidiVal1 = value1;
+      controlChange(1, 16, value1);
       MidiUSB.flush();
     }
   }
- 
-  Serial.print("\t");
+
   // second distance
   cm = getDistance(TRIG_PIN_2, ECHO_PIN_2);
-  if (cm >=0) {
-    value = smoothValue(cm, buf2, &index2);
-    if (lastMidiVal2 != value) {
-      lastMidiVal2 = value;
-      Serial.print("2: "); Serial.println(value);
-      controlChange(1, 17, value);
+  if (cm >= 0)
+  {
+    value2 = smoothValue(cm, buf2, &index2);
+    if (lastMidiVal2 != value2)
+    {
+      lastMidiVal2 = value2;
+      controlChange(1, 17, value2);
       MidiUSB.flush();
     }
   }
-    Serial.println();
- 
-    // Wait at least 60ms before next measurement
-    delay(60);
+  Serial.print("1: "); Serial.print(value1); Serial.print("\t");
+  Serial.print("2: "); Serial.println(value2);
+  // Wait at least 60ms before next measurement
+  delay(60);
 }
 
 int smoothValue(float cm, int buffer[BUF_SIZE], int *index)
@@ -105,59 +107,90 @@ int smoothValue(float cm, int buffer[BUF_SIZE], int *index)
   {
     *index = 0;
   }
-  // sum and average values
-  // Serial.print("[");
-  int average = 0;
-  for (int i = 0; i < BUF_SIZE; i++)
-  {
-    // Serial.print(buffer[i]); Serial.print(" ");
-    average += buffer[i];
-  }
-  // Serial.print("] average: ");
-  average = average / BUF_SIZE;
-  //Serial.println(average);
-  return average;
+  int median = findMedian(buffer, BUF_SIZE);
+  return median;
 }
 
-  float getDistance(int TRIG_PIN, int ECHO_PIN)
-  {
-    unsigned long t1;
-    unsigned long t2;
-    unsigned long pulse_width;
-    float cm;
-
-    // Hold the trigger pin high for at least 10 us
-    digitalWrite(TRIG_PIN, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(TRIG_PIN, LOW);
-
-    // Wait for pulse on echo pin
-    while (digitalRead(ECHO_PIN) == 0)
-      ;
-
-    // Measure how long the echo pin was held high (pulse width)
-    // Note: the micros() counter will overflow after ~70 min
-    t1 = micros();
-    while (digitalRead(ECHO_PIN) == 1)
-      ;
-    t2 = micros();
-    pulse_width = t2 - t1;
-
-    // Calculate distance in centimeters and inches. The constants
-    // are found in the datasheet, and calculated from the assumed speed
-    //of sound in air at sea level (~340 m/s).
-    cm = pulse_width / 58.0;
-
-    // Print out results
-    if (pulse_width > MAX_DIST)
-    {
-      return -1;
+/* https://www.geeksforgeeks.org/program-for-mean-and-median-of-an-unsorted-array/ */
+// Function for calculating median 
+float findMedian(int a[], int n) 
+{ 
+    float median;
+    // First we sort the array 
+    sort(a, n); 
+  
+    // check for even case 
+    if (n % 2 != 0) {
+       median = (float)a[n/2]; 
     } else {
+      median = (float)(a[(n-1)/2] + a[n/2])/2.0; 
+    }
+      
+    return median;
+}
+
+/* https://www.geeksforgeeks.org/insertion-sort/ */
+/* Function to sort an array using insertion sort*/
+void sort(int arr[], int n)
+{
+  int i, key, j;
+  for (i = 1; i < n; i++)
+  {
+    key = arr[i];
+    j = i - 1;
+
+    /* Move elements of arr[0..i-1], that are 
+          greater than key, to one position ahead 
+          of their current position */
+    while (j >= 0 && arr[j] > key)
+    {
+      arr[j + 1] = arr[j];
+      j = j - 1;
+    }
+    arr[j + 1] = key;
+  }
+}
+
+float getDistance(int TRIG_PIN, int ECHO_PIN)
+{
+  unsigned long t1;
+  unsigned long t2;
+  unsigned long pulse_width;
+  float cm;
+
+  // Hold the trigger pin high for at least 10 us
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  // Wait for pulse on echo pin
+  while (digitalRead(ECHO_PIN) == 0)
+    ;
+
+  // Measure how long the echo pin was held high (pulse width)
+  // Note: the micros() counter will overflow after ~70 min
+  t1 = micros();
+  while (digitalRead(ECHO_PIN) == 1)
+    ;
+  t2 = micros();
+  pulse_width = t2 - t1;
+
+  // Calculate distance in centimeters and inches. The constants
+  // are found in the datasheet, and calculated from the assumed speed
+  //of sound in air at sea level (~340 m/s).
+  cm = pulse_width / 58.0;
+
+  // Print out results
+  if (pulse_width > MAX_DIST)
+  {
+    return -1;
+  }
+  else
+  {
     return cm;
   }
 }
 
-  
 // First parameter is the event type (0x09 = note on, 0x08 = note off).
 // Second parameter is note-on/note-off, combined with the channel.
 // Channel can be anything between 0-15. Typically reported to the user as 1-16.
