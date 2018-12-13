@@ -84,8 +84,9 @@ void loop()
       MidiUSB.flush();
     }
   }
-  Serial.print("1: "); Serial.print(value1); Serial.print("\t");
-  Serial.print("2: "); Serial.println(value2);
+  // Serial.println(cm);
+  // Serial.print("1: "); Serial.print(value1); Serial.print("\t");
+  // Serial.print("2: "); Serial.println(value2);
   // Wait at least 60ms before next measurement
   delay(60);
 }
@@ -93,14 +94,14 @@ void loop()
 int smoothValue(float cm, int buffer[BUF_SIZE], int *index)
 {
   // normalise values or return -1 if out of range
-  if (cm < 0) {
-    return -1;
+  if (cm < 12) {
+    cm = 12;
   }
   if (cm > 40.0)
   {
     cm = 40.0;
   }
-  int value = mapFloat(cm, 0.0, 40.0, 0.0, 127.0);
+  int value = mapFloat(cm, 12.0, 40.0, 0.0, 127.0);
   buffer[*index] = value;
   (*index)++;
   if (*index >= BUF_SIZE)
